@@ -1,0 +1,10 @@
+.ORIG x3000
+    LEA R0, DATA
+    LDW R1, R0, #0
+    STW R1, R0, #2
+    LDB R2, R0, #1
+    STB R2, R0, #3
+    TRAP x25
+DATA .FILL x1234
+    .FILL x0000
+.END
