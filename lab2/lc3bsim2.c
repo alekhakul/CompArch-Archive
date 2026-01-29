@@ -30,6 +30,8 @@
 /***************************************************************/
 
 void process_instruction();
+void setCC(int val);
+int signExtend(int val, int amt);
 
 /***************************************************************/
 /* A couple of useful definitions.                             */
@@ -414,4 +416,49 @@ void process_instruction(){
    *       -Update NEXT_LATCHES
    */     
 
+    int instr, opcode;
+
+    // Fetch
+    instr = (MEMORY[CURRENT_LATCHES.PC >> 1][1] << 8) | (MEMORY[CURRENT_LATCHES.PC >> 1][0]);
+    NEXT_LATCHES.PC = Low16bits(CURRENT_LATCHES.PC + 2);
+
+    // Decode
+    opcode = (instr >> 12) & 0xF;
+
+    // Execute
+    switch(opcode) {
+
+        // ADD
+        case 0x1:
+            
+            break;
+
+        // AND
+        case 0x5:
+        
+    }
+}
+
+int signExtend(int val, int amt) {
+    int sign_bit = 1 << (amt - 1);
+    if (val & sign_bit) {
+        return val | (0xFFFFFFFF << amt);
+    }
+    return val;
+}
+
+void setCC(int val) {
+    if (val & 0x8000) {
+        NEXT_LATCHES.N = 1;
+        NEXT_LATCHES.Z = 0;
+        NEXT_LATCHES.P = 0;
+    } else if (val == 0) {
+        NEXT_LATCHES.N = 0;
+        NEXT_LATCHES.Z = 1;
+        NEXT_LATCHES.P = 0;
+    } else {
+        NEXT_LATCHES.N = 0;
+        NEXT_LATCHES.Z = 0;
+        NEXT_LATCHES.P = 1;
+    }
 }
