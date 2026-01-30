@@ -36,3 +36,14 @@ RET
 
 OHKYO .FILL x0000    ; Random
 .END
+
+
+;Register Output
+;0: 0x302a ~
+;1: 0x000f
+;2: 0x0013
+;3: 0x0002
+;4: 0xfffe
+;5: 0x0008
+;6: 0x7ffe
+;7: 0x3026

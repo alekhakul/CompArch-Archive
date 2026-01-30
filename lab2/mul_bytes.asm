@@ -30,3 +30,14 @@ NO_OF   STB   R2, R5, #2      ; Mem[0x3102] = low byte of result
 BASE    .FILL x3100
 
         .END
+
+
+;Register Output
+;0: 0x0000
+;1: 0x0000
+;2: 0x0000
+;3: 0x0000
+;4: 0x0000
+;5: 0x3100
+;6: 0x0000
+;7: 0x3024
