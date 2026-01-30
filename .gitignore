@@ -1,3 +1,6 @@
 *.obj
 assemble
 *.o
+hello
+dumpsim
+sim

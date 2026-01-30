@@ -429,13 +429,230 @@ void process_instruction(){
     switch(opcode) {
 
         // ADD
-        case 0x1:
-            
+        case 0x1: {
+            int dr = (instr >> 9) & 0x7;
+            int sr1 = (instr >> 6) & 0x7;
+            int res = 0;
+
+            // ADD Steering bit
+            if ((instr >> 5) & 0x1) {
+                // Immediate
+                int imm5 = instr & 0x1F;
+                int val = signExtend(imm5, 5);
+                res = CURRENT_LATCHES.REGS[sr1] + val;
+            } else {
+                // Register
+                int sr2 = instr & 0x7;
+                res = CURRENT_LATCHES.REGS[sr1] + CURRENT_LATCHES.REGS[sr2];
+            }
+
+            res = Low16bits(res);
+            NEXT_LATCHES.REGS[dr] = res;
+            setCC(res);
             break;
+        }
 
         // AND
-        case 0x5:
+        case 0x5: {
+            int dr = (instr >> 9) & 0x7;
+            int sr1 = (instr >> 6) & 0x7;
+            int res = 0;
+
+            // AND Steering bit
+            if ((instr >> 5) & 0x1) {
+                // Immediate
+                int imm5 = instr & 0x1F;
+                int val = signExtend(imm5, 5);
+                res = CURRENT_LATCHES.REGS[sr1] & val;
+            } else {
+                // Register
+                int sr2 = instr & 0x7;
+                res = CURRENT_LATCHES.REGS[sr1] & CURRENT_LATCHES.REGS[sr2];
+            }
+
+            res = Low16bits(res);
+            NEXT_LATCHES.REGS[dr] = res;
+            setCC(res);
+            break;
+        }
+
+        // BR
+        case 0x0: {
+            int n = (instr >> 11) & 0x1;
+            int z = (instr >> 10) & 0x1;
+            int p = (instr >> 9) & 0x1;
+            
+            if ((n && CURRENT_LATCHES.N) || 
+                (z && CURRENT_LATCHES.Z) ||
+                (p && CURRENT_LATCHES.P)) {
+                    int offset9 = instr & 0x1FF;
+                    int val = signExtend(offset9, 9);
+                    val = val << 1;
+                    NEXT_LATCHES.PC = Low16bits(NEXT_LATCHES.PC + val);
+                }
+            break;
+        }
+
+        // JMP
+        case 0xC: {
+            int baseR = (instr >> 6) & 0x7;
+            NEXT_LATCHES.PC = CURRENT_LATCHES.REGS[baseR];
+            break;
         
+        // JSR(R)
+        case 0x4:
+            NEXT_LATCHES.REGS[7] = NEXT_LATCHES.PC;
+            // JSR
+            if ((instr >> 11) & 0x1) {
+                int offset11 = instr & 0x7FF;
+                int val = signExtend(offset11, 11);
+                val = val << 1;
+                NEXT_LATCHES.PC = Low16bits(NEXT_LATCHES.PC + val);
+            } else {
+                int baseR = (instr >> 6) & 0x7;
+                NEXT_LATCHES.PC = CURRENT_LATCHES.REGS[baseR];
+            }
+            break;
+        }
+        
+        // LDB
+        case 0x2: {
+            int dr = (instr >> 9) & 0x7;
+            int baseR = (instr >> 6) & 0x7;
+            int offset6 = instr & 0x3F;
+            int address = CURRENT_LATCHES.REGS[baseR] + signExtend(offset6, 6);
+            address = Low16bits(address);
+
+            int val = 0;
+            if (address & 0x1) {
+                val = MEMORY[address >> 1][1];
+            } else {
+                val = MEMORY[address >> 1][0];
+            }
+
+            val = signExtend(val, 8);
+            NEXT_LATCHES.REGS[dr] = val;
+            setCC(val);
+            break;
+        }
+
+        // LDW
+        case 0x6: {
+            int dr = (instr >> 9) & 0x7;
+            int baseR = (instr >> 6) & 0x7;
+            int offset6 = instr & 0x3F;
+
+            int address = CURRENT_LATCHES.REGS[baseR] + (signExtend(offset6, 6) << 1);
+            address = Low16bits(address);
+
+            int val = 0;
+            val = (MEMORY[address >> 1][1] << 8) | MEMORY[address >> 1][0];
+
+            NEXT_LATCHES.REGS[dr] = val;
+            setCC(val);
+            break;
+        }
+
+        // LEA
+        case 0xE: {
+            int dr = (instr >> 9) & 0x7;
+            int offset9 = instr & 0x1FF;
+            int val = NEXT_LATCHES.PC + (signExtend(offset9, 9) << 1);
+            NEXT_LATCHES.REGS[dr] = Low16bits(val);
+            break;
+        }
+        
+        // SHF
+        case 0xD: {
+            int dr = (instr >> 9) & 0x7;
+            int sr = (instr >> 6) & 0x7;
+            int amount4 = instr & 0xF;
+            int val = CURRENT_LATCHES.REGS[sr];
+            int res = 0;
+
+            if ((instr >> 4) & 0x1) {
+                // RSHFA
+                if ((instr >> 5) & 0x1) {
+                    val = signExtend(val, 16);
+                    res = val >> amount4;
+                } else {
+                // RSHFL
+                res = Low16bits(val) >> amount4;
+                }
+            } else {
+                res = val << amount4;
+            }
+            res = Low16bits(res);
+            NEXT_LATCHES.REGS[dr] = res;
+            setCC(res);
+            break;
+        }
+
+        // STB
+        case 0x3: {
+            int sr = (instr >> 9) & 0x7;
+            int baseR = (instr >> 6) & 0x7;
+            int offset6 = instr & 0x3F;
+            int address = CURRENT_LATCHES.REGS[baseR] + signExtend(offset6, 6);
+            address = Low16bits(address);
+
+            int val = CURRENT_LATCHES.REGS[sr] & 0xFF;
+
+            if (address & 0x1) {
+                MEMORY[address >> 1][1] = val;
+            } else {
+                MEMORY[address >> 1][0] = val;
+            }
+            break;
+        }
+
+        // STW
+        case 0x7: {
+            int sr = (instr >> 9) & 0x7;
+            int baseR = (instr >> 6) & 0x7;
+            int offset6 = instr & 0x3F;
+            int address = CURRENT_LATCHES.REGS[baseR] + (signExtend(offset6, 6) << 1);
+            address = Low16bits(address);
+
+            int val = CURRENT_LATCHES.REGS[sr];
+            MEMORY[address >> 1][0] = val & 0xFF;
+            MEMORY[address >> 1][1] = (val >> 8) & 0xFF;
+            break;
+        }
+
+        // TRAP
+        case 0xF: {
+            NEXT_LATCHES.REGS[7] = NEXT_LATCHES.PC;
+            NEXT_LATCHES.PC = 0;
+            break;
+        }
+
+        // XOR
+        case 0x9: {
+            int dr = (instr >> 9) & 0x7;
+            int sr1 = (instr >> 6) & 0x7;
+            int res = 0;
+
+            // XOR Steering bit
+            if ((instr >> 5) & 0x1) {
+                // Immediate
+                int imm5 = instr & 0x1F;
+                int val = signExtend(imm5, 5);
+                res = CURRENT_LATCHES.REGS[sr1] ^ val;
+            } else {
+                // Register
+                int sr2 = instr & 0x7;
+                res = CURRENT_LATCHES.REGS[sr1] ^ CURRENT_LATCHES.REGS[sr2];
+            }
+
+            res = Low16bits(res);
+            NEXT_LATCHES.REGS[dr] = res;
+            setCC(res);
+            break;
+        }
+
+        default:
+            exit(4);
     }
 }
 
