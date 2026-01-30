@@ -1,0 +1,32 @@
+Output for alltest
+
+Instruction Count : 20
+PC                : 0x0000
+CCs: N = 0  Z = 0  P = 1
+Registers:
+0: 0x302a
+1: 0x000f
+2: 0x0013
+3: 0x0002
+4: 0xfffe
+5: 0x0008
+6: 0x7ffe
+7: 0x3026
+
+
+Output for mulbytes
+
+Current register/bus values :
+-------------------------------------
+Instruction Count : 14
+PC                : 0x0000
+CCs: N = 0  Z = 1  P = 0
+Registers:
+0: 0x0000
+1: 0x0000
+2: 0x0000
+3: 0x0000
+4: 0x0000
+5: 0x3100
+6: 0x0000
+7: 0x3024
