@@ -651,7 +651,7 @@ void cycle_memory() {
                     if (mar_0 == 0) {
                         MEMORY[addr][0] = CURRENT_LATCHES.MDR & 0x00FF;
                     } else {
-                        MEMORY[addr][1] = CURRENT_LATCHES.MDR & 0xFF00;
+                        MEMORY[addr][1] = (CURRENT_LATCHES.MDR >> 8) & 0x00FF;
                     }
                 }
             }
@@ -678,7 +678,7 @@ void eval_bus_drivers() {
    *		 Gate_MDR.
    */    
 
-    // Separate func for each gate:
+    // Separate func for each gate
     int gate_marmux = GetGATE_MARMUX(CURRENT_LATCHES.MICROINSTRUCTION);
     int gate_pc = GetGATE_PC(CURRENT_LATCHES.MICROINSTRUCTION);
     int gate_alu = GetGATE_ALU(CURRENT_LATCHES.MICROINSTRUCTION);
@@ -705,8 +705,26 @@ void drive_bus() {
   /* 
    * Datapath routine for driving the bus from one of the 5 possible 
    * tristate drivers. 
-   */       
+   */    
+    int gate_marmux = GetGATE_MARMUX(CURRENT_LATCHES.MICROINSTRUCTION);
+    int gate_pc = GetGATE_PC(CURRENT_LATCHES.MICROINSTRUCTION);
+    int gate_alu = GetGATE_ALU(CURRENT_LATCHES.MICROINSTRUCTION);
+    int gate_shf = GetGATE_SHF(CURRENT_LATCHES.MICROINSTRUCTION);
+    int gate_mdr = GetGATE_MDR(CURRENT_LATCHES.MICROINSTRUCTION);   
 
+    if (gate_marmux == 1){
+        BUS = bus_marmux;
+    } else if (gate_pc == 1) {
+        BUS = bus_pc;
+    } else if (gate_alu == 1) {
+        BUS = bus_alu;
+    } else if (gate_shf == 1) {
+        BUS = bus_shf;
+    } else if (gate_mdr == 1) {
+        BUS = bus_mdr;
+    } else {
+        BUS = 0;
+    }
 }
 
 
@@ -718,7 +736,69 @@ void latch_datapath_values() {
    * require sourcing the bus; therefore, this routine has to come 
    * after drive_bus.
    */       
+    int ld_mar = GetLD_MAR(CURRENT_LATCHES.MICROINSTRUCTION);
+    int ld_mdr = GetLD_MDR(CURRENT_LATCHES.MICROINSTRUCTION);
+    int ld_ir  = GetLD_IR(CURRENT_LATCHES.MICROINSTRUCTION);
+    int ld_ben = GetLD_BEN(CURRENT_LATCHES.MICROINSTRUCTION);
+    int ld_reg = GetLD_REG(CURRENT_LATCHES.MICROINSTRUCTION);
+    int ld_cc  = GetLD_CC(CURRENT_LATCHES.MICROINSTRUCTION);
+    int ld_pc  = GetLD_PC(CURRENT_LATCHES.MICROINSTRUCTION);
+    int mio_en = GetMIO_EN(CURRENT_LATCHES.MICROINSTRUCTION);
+    int drmux  = GetDRMUX(CURRENT_LATCHES.MICROINSTRUCTION);
+    int pcmux  = GetPCMUX(CURRENT_LATCHES.MICROINSTRUCTION);
 
+    if (ld_mar == 1) {
+        NEXT_LATCHES.MAR = Low16bits(BUS);
+    } if (ld_mdr == 1) {
+        if (mio_en == 0) {
+            NEXT_LATCHES.MDR = Low16bits(BUS);
+        } // mio_en = 1 is in cycle_memory
+    } if (ld_ir == 1) {
+        NEXT_LATCHES.IR = Low16bits(BUS);
+    } if (ld_ben == 1) {
+        int ben9 = (CURRENT_LATCHES.IR >> 9) & 0x01;
+        int ben10 = (CURRENT_LATCHES.IR >> 10) & 0x01;
+        int ben11 = (CURRENT_LATCHES.IR >> 11) & 0x01;
+        int n = CURRENT_LATCHES.N;
+        int z = CURRENT_LATCHES.Z;
+        int p = CURRENT_LATCHES.P;
+
+        if ((ben9 & p) | (ben10 & z) | (ben11 & n)) {
+            NEXT_LATCHES.BEN = 1;
+        } else {
+            NEXT_LATCHES.BEN = 0;
+        }
+    } if (ld_reg == 1) {
+        int dr;
+        if (drmux == 0) {
+            dr = (CURRENT_LATCHES.IR >> 9) & 0x07;
+        } else {
+            dr = 7;
+        }
+        NEXT_LATCHES.REGS[dr] = Low16bits(BUS);
+    } if (ld_cc == 1) {
+        if (BUS == 0) {
+            NEXT_LATCHES.N = 0;
+            NEXT_LATCHES.Z = 1;
+            NEXT_LATCHES.P = 0;
+        } else if (BUS & 0x8000) {
+            NEXT_LATCHES.N = 1;
+            NEXT_LATCHES.Z = 0;
+            NEXT_LATCHES.P = 0;
+        } else {
+            NEXT_LATCHES.N = 0;
+            NEXT_LATCHES.Z = 0;
+            NEXT_LATCHES.P = 1;
+        }
+    } if (ld_pc == 1) {
+        if (pcmux == 0) {
+            NEXT_LATCHES.PC = CURRENT_LATCHES.PC + 2;
+        } else if (pcmux == 1) {
+            NEXT_LATCHES.PC = Low16bits(BUS);
+        } else if (pcmux == 2) {
+            NEXT_LATCHES.PC = eval_MARMUX();
+        }
+    }
 }
 
 
