@@ -751,7 +751,14 @@ void latch_datapath_values() {
         NEXT_LATCHES.MAR = Low16bits(BUS);
     } if (ld_mdr == 1) {
         if (mio_en == 0) {
-            NEXT_LATCHES.MDR = Low16bits(BUS);
+            int datasize = GetDATA_SIZE(CURRENT_LATCHES.MICROINSTRUCTION);
+            int mar_0 = CURRENT_LATCHES.MAR & 0x01;
+
+            if (datasize == 0 && mar_0 == 1) {
+                NEXT_LATCHES.MDR = Low16bits((BUS & 0xFF) << 8);
+            } else {
+                NEXT_LATCHES.MDR = Low16bits(BUS);
+            }
         } // mio_en = 1 is in cycle_memory
     } if (ld_ir == 1) {
         NEXT_LATCHES.IR = Low16bits(BUS);
@@ -813,8 +820,9 @@ int signExtend(int val, int amt) {
 
 int eval_MARMUX() {
     int marmux = GetMARMUX(CURRENT_LATCHES.MICROINSTRUCTION);
+    int gate_marmux = GetGATE_MARMUX(CURRENT_LATCHES.MICROINSTRUCTION);
 
-    if (marmux == 0) { // only in TRAP
+    if (marmux == 0 && gate_marmux == 1) { // only in TRAP
         int trap = CURRENT_LATCHES.IR & 0x00FF;
         return Low16bits(trap << 1);
     
