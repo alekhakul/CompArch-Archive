@@ -673,12 +673,11 @@ void eval_micro_sequencer() {
     }
 
     // LD and ST wordsize for exception logic
-    int is_word = (CURRENT_LATCHES.STATE_NUMBER == 6 || CURRENT_LATCHES.STATE_NUMBER == 7);
-    int is_byte = (CURRENT_LATCHES.STATE_NUMBER == 2 || CURRENT_LATCHES.STATE_NUMBER == 3);
+    int is_word = (CURRENT_LATCHES.STATE_NUMBER == 25 || CURRENT_LATCHES.STATE_NUMBER == 23);
+    int is_byte = (CURRENT_LATCHES.STATE_NUMBER == 29 || CURRENT_LATCHES.STATE_NUMBER == 24);
 
     // Unknown Opcode
     if (ird == 1 && (NEXT_LATCHES.STATE_NUMBER == 10 || NEXT_LATCHES.STATE_NUMBER == 11)) {
-        NEXT_LATCHES.STATE_NUMBER = 49;
         NEXT_LATCHES.EXC = 1;
         NEXT_LATCHES.VECT = 0x04;
     }
@@ -691,11 +690,9 @@ void eval_micro_sequencer() {
 
         // Protection over unaligned priority
         if (protected) {
-            NEXT_LATCHES.STATE_NUMBER = 49;
             NEXT_LATCHES.EXC = 1;
             NEXT_LATCHES.VECT = 0x02;
         } else if (unaligned) {
-            NEXT_LATCHES.STATE_NUMBER = 49;
             NEXT_LATCHES.EXC = 1;
             NEXT_LATCHES.VECT = 0x03;
         }
@@ -708,19 +705,21 @@ void eval_micro_sequencer() {
         int is_unaligned = (pc % 2 != 0);
 
         if (is_protected) {
-            NEXT_LATCHES.STATE_NUMBER = 49;
             NEXT_LATCHES.EXC = 1;
             NEXT_LATCHES.VECT = 0x02;
         } else if (is_unaligned) {
-            NEXT_LATCHES.STATE_NUMBER = 49;
             NEXT_LATCHES.EXC = 1;
             NEXT_LATCHES.VECT = 0x03;
         } else if (CURRENT_LATCHES.INT == 1) {
-            NEXT_LATCHES.STATE_NUMBER = 49;
             NEXT_LATCHES.EXC = 1;      
             NEXT_LATCHES.VECT = 0x01;  
             NEXT_LATCHES.INT = 0;      
         }
+    }
+
+    if (NEXT_LATCHES.EXC == 1) {
+        NEXT_LATCHES.STATE_NUMBER = 49;
+        NEXT_LATCHES.EXC = 0;
     }
 
     memcpy(NEXT_LATCHES.MICROINSTRUCTION, CONTROL_STORE[NEXT_LATCHES.STATE_NUMBER], sizeof(int)*CONTROL_STORE_BITS);

@@ -12,6 +12,7 @@
     ADD R6, R6, #2
     LDW R0, R6, #0
     ADD R6, R6, #2
+    ;.FILL xA000   ; Nested Exception in Interrupt
     RTI ; Return
 
 PTRX4000 .FILL x4000

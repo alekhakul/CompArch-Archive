@@ -1,0 +1,154 @@
+
+Current register/bus values :
+-------------------------------------
+Cycle Count  : 299
+PC           : 0x301c
+IR           : 0x16c5
+STATE_NUMBER : 0x0021
+
+BUS          : 0x0000
+MDR          : 0x16c5
+MAR          : 0x301a
+CCs: N = 0  Z = 0  P = 1
+Registers:
+0: 0x4000
+1: 0x0001
+2: 0xc003
+3: 0x007f
+4: 0x0011
+5: 0x0023
+6: 0x0000
+7: 0x0000
+
+
+Current register/bus values :
+-------------------------------------
+Cycle Count  : 513
+PC           : 0x301c
+IR           : 0x8000
+STATE_NUMBER : 0x0012
+
+BUS          : 0x0000
+MDR          : 0x8004
+MAR          : 0x2ffe
+CCs: N = 1  Z = 0  P = 0
+Registers:
+0: 0x4000
+1: 0x0001
+2: 0xc004
+3: 0x007f
+4: 0x0011
+5: 0x0023
+6: 0x0000
+7: 0x0000
+
+
+Current register/bus values :
+-------------------------------------
+Cycle Count  : 1459
+PC           : 0x0000
+IR           : 0xf025
+STATE_NUMBER : 0x0012
+
+BUS          : 0x0000
+MDR          : 0x0000
+MAR          : 0x004a
+CCs: N = 0  Z = 1  P = 0
+Registers:
+0: 0x0000
+1: 0x0001
+2: 0xc014
+3: 0x0052
+4: 0x0000
+5: 0x0007
+6: 0x2ffc
+7: 0x1402
+
+
+Memory content [0xc014..0xc014] :
+-------------------------------------
+ 0xc014 (49172) : 0x0052
+
+
+Memory content [0x4000..0x4000] :
+-------------------------------------
+ 0x4000 (16384) : 0x0002
+
+
+Memory content [0x2ff0..0x2ffe] :
+-------------------------------------
+ 0x2ff0 (12272) : 0x0000
+ 0x2ff2 (12274) : 0x0000
+ 0x2ff4 (12276) : 0x0000
+ 0x2ff6 (12278) : 0x0000
+ 0x2ff8 (12280) : 0x0001
+ 0x2ffa (12282) : 0x4000
+ 0x2ffc (12284) : 0x3028
+ 0x2ffe (12286) : 0x8002
+
+
+Current register/bus values :
+-------------------------------------
+Cycle Count  : 299
+PC           : 0x301c
+IR           : 0x16c5
+STATE_NUMBER : 0x0021
+
+BUS          : 0x0000
+MDR          : 0x16c5
+MAR          : 0x301a
+CCs: N = 0  Z = 0  P = 1
+Registers:
+0: 0x4000
+1: 0x0001
+2: 0xc003
+3: 0x007f
+4: 0x0011
+5: 0x0023
+6: 0x0000
+7: 0x0000
+
+
+Current register/bus values :
+-------------------------------------
+Cycle Count  : 513
+PC           : 0x301c
+IR           : 0x8000
+STATE_NUMBER : 0x0012
+
+BUS          : 0x0000
+MDR          : 0x8004
+MAR          : 0x2ffe
+CCs: N = 1  Z = 0  P = 0
+Registers:
+0: 0x4000
+1: 0x0001
+2: 0xc004
+3: 0x007f
+4: 0x0011
+5: 0x0023
+6: 0x0000
+7: 0x0000
+
+
+Current register/bus values :
+-------------------------------------
+Cycle Count  : 1474
+PC           : 0x0000
+IR           : 0xf025
+STATE_NUMBER : 0x0012
+
+BUS          : 0x0000
+MDR          : 0x0000
+MAR          : 0x004a
+CCs: N = 1  Z = 0  P = 0
+Registers:
+0: 0xc017
+1: 0x0001
+2: 0xc014
+3: 0x0052
+4: 0x0000
+5: 0x0007
+6: 0x2ffc
+7: 0x1602
+
