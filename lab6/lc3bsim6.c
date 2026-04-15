@@ -968,7 +968,7 @@ void MEM_stage() {
             // Check odd
             } else {
                 we1 = 1;
-                write_word = write_word << 8;
+                write_word = (write_word & 0x00FF) << 8;
             }
         // Word
         } else {
@@ -986,7 +986,7 @@ void MEM_stage() {
     mem_stall = dcache_en && !dcache_r;
 
     int sr_data = read_word;
-    if (dcache_en && !dcache_r) {
+    if (dcache_en && !dcache_rw) {
         if (datasize == 0) {
             if ((PS.MEM_ADDRESS & 1) == 0) {
                 sr_data = signExtend(read_word & 0x00FF, 8);
