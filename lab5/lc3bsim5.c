@@ -71,11 +71,11 @@ enum CS_BITS {
     GATE_MARMUX,
     GATE_SHF,
     PCMUX1, PCMUX0,
-    DRMUX,
-    SR1MUX,
+    DRMUX0,
+    SR1MUX0,
     ADDR1MUX,
     ADDR2MUX1, ADDR2MUX0,
-    MARMUX,
+    MARMUX0,
     ALUK1, ALUK0,
     MIO_EN,
     R_W,
@@ -95,6 +95,11 @@ enum CS_BITS {
     COND2,
     DRMUX1,
     SR1MUX1,
+    LD_VA,
+    GATE_PTE,
+    MARMUX1,
+    CONDTRAN,
+    CONDRET,
     CONTROL_STORE_BITS
 } CS_BITS;
 
@@ -102,7 +107,7 @@ enum CS_BITS {
 /* Functions to get at the control bits.                       */
 /***************************************************************/
 int GetIRD(int *x)           { return(x[IRD]); }
-int GetCOND(int *x)          { return((x[COND1] << 1) + x[COND0]); }
+int GetCOND(int *x)          { return((x[COND2] << 2) + (x[COND1] << 1) + x[COND0]); }
 int GetJ(int *x)             { return((x[J5] << 5) + (x[J4] << 4) +
 				      (x[J3] << 3) + (x[J2] << 2) +
 				      (x[J1] << 1) + x[J0]); }
@@ -119,16 +124,33 @@ int GetGATE_ALU(int *x)      { return(x[GATE_ALU]); }
 int GetGATE_MARMUX(int *x)   { return(x[GATE_MARMUX]); }
 int GetGATE_SHF(int *x)      { return(x[GATE_SHF]); }
 int GetPCMUX(int *x)         { return((x[PCMUX1] << 1) + x[PCMUX0]); }
-int GetDRMUX(int *x)         { return(x[DRMUX]); }
-int GetSR1MUX(int *x)        { return(x[SR1MUX]); }
+int GetDRMUX(int *x)         { return(x[DRMUX0]); }
+int GetSR1MUX(int *x)        { return(x[SR1MUX0]); }
 int GetADDR1MUX(int *x)      { return(x[ADDR1MUX]); }
 int GetADDR2MUX(int *x)      { return((x[ADDR2MUX1] << 1) + x[ADDR2MUX0]); }
-int GetMARMUX(int *x)        { return(x[MARMUX]); }
+int GetMARMUX(int *x)        { return(x[MARMUX0]); }
 int GetALUK(int *x)          { return((x[ALUK1] << 1) + x[ALUK0]); }
 int GetMIO_EN(int *x)        { return(x[MIO_EN]); }
 int GetR_W(int *x)           { return(x[R_W]); }
 int GetDATA_SIZE(int *x)     { return(x[DATA_SIZE]); } 
 int GetLSHF1(int *x)         { return(x[LSHF1]); }
+int GetGATE_PSR(int *x)      { return(x[GATE_PSR]); }
+int GetGATE_VECT(int *x)     { return(x[GATE_VECT]); }
+int GetGATE_SP(int *x)       { return(x[GATE_SP]); }
+int GetGATE_SPMATH(int *x)   { return(x[GATE_SPMATH]); }
+int GetLD_PSR(int *x)        { return(x[LD_PSR]); }
+int GetLD_SSP(int *x)        { return(x[LD_SSP]); }
+int GetLD_USP(int *x)        { return(x[LD_USP]); }
+int GetLD_VECT(int *x)       { return(x[LD_VECT]); }
+int GetSPMUX(int *x)         { return(x[SPMUX]); }
+int GetSTACKMUX(int *x)      { return(x[STACKMUX]); }
+int GetDRMUX1(int *x)        { return(x[DRMUX1]); }
+int GetSR1MUX1(int *x)       { return(x[SR1MUX1]); }
+int GetLD_VA(int *x)         { return(x[LD_VA]); }
+int GetGATE_PTE(int *x)      { return(x[GATE_PTE]); }
+int GetMARMUX1(int *x)       { return(x[MARMUX1]); }
+int GetCONDTRAN(int *x)      { return(x[CONDTRAN]); }
+int GetCONDRET(int *x)       { return(x[CONDRET]); }
 /* MODIFY: you can add more Get functions for your new control signals */
 
 /***************************************************************/
@@ -191,6 +213,7 @@ int SSP; /* Initial value of system stack pointer */
 /* For lab 5 */
 int PTBR; /* This is initialized when we load the page table */
 int VA;   /* Temporary VA register */
+int SS; // Saved State
 /* MODIFY: you should add here any other registers you need to implement virtual memory */
 
 } System_Latches;
@@ -652,6 +675,7 @@ int bus_spmath;
 int bus_sp;
 int bus_vect;
 int bus_psr;
+int bus_pte;
 
 int signExtend(int val, int amt);
 int eval_ALU();
@@ -660,6 +684,7 @@ int eval_MARMUX();
 int eval_MDR();
 int eval_SPMATH();
 int eval_SP();
+int eval_PTE();
 
 void eval_micro_sequencer() {
 
@@ -675,10 +700,19 @@ void eval_micro_sequencer() {
     int cond = GetCOND(CURRENT_LATCHES.MICROINSTRUCTION);
     int j = GetJ(CURRENT_LATCHES.MICROINSTRUCTION);
 
-    if (ird == 1) {
+    int condtran = GetCONDTRAN(CURRENT_LATCHES.MICROINSTRUCTION);
+    int condret = GetCONDRET(CURRENT_LATCHES.MICROINSTRUCTION);
+
+    // Microsequencer w/ VMEM logic (muxes in diagram)
+    if (condtran == 1) {
+        NEXT_LATCHES.SS = j;
+        NEXT_LATCHES.STATE_NUMBER = 57;
+    } else if (condret == 1) {
+        NEXT_LATCHES.STATE_NUMBER = CURRENT_LATCHES.SS;
+    } else if (ird == 1) {
         int opcode = ((CURRENT_LATCHES.IR) >> 12) & 0x000F;
         NEXT_LATCHES.STATE_NUMBER = opcode;
-    } else { // IRD = 0
+    } else {
         if (cond == 0) {
             NEXT_LATCHES.STATE_NUMBER = j;
         } else if (cond == 1) { // Memory Ready
@@ -692,48 +726,44 @@ void eval_micro_sequencer() {
         }
     }
 
-    // LD and ST wordsize for exception logic
-    int is_word = (CURRENT_LATCHES.STATE_NUMBER == 25 || CURRENT_LATCHES.STATE_NUMBER == 23);
-    int is_byte = (CURRENT_LATCHES.STATE_NUMBER == 29 || CURRENT_LATCHES.STATE_NUMBER == 24);
-
     // Unknown Opcode
     if (ird == 1 && (NEXT_LATCHES.STATE_NUMBER == 10 || NEXT_LATCHES.STATE_NUMBER == 11)) {
         NEXT_LATCHES.EXC = 1;
-        NEXT_LATCHES.VECT = 0x04;
+        NEXT_LATCHES.VECT = 0x05;
     }
 
-    // Data memory exceptions
-    else if (is_word || is_byte) {
-        int mar = CURRENT_LATCHES.MAR;
-        int protected = (mar < 0x3000) && (CURRENT_LATCHES.PSR_15 == 1);
-        int unaligned = (mar % 2 != 0) && is_word;
+    // State 18 check for int
+    else if (CURRENT_LATCHES.STATE_NUMBER == 18) {
+        if (CURRENT_LATCHES.INT == 1) {
+            NEXT_LATCHES.EXC = 1;      
+            NEXT_LATCHES.VECT = 0x01;  
+            NEXT_LATCHES.INT = 0;      
+        }
+    }
 
-        // Protection over unaligned priority
-        if (protected) {
-            NEXT_LATCHES.EXC = 1;
-            NEXT_LATCHES.VECT = 0x02;
-        } else if (unaligned) {
+    // Unalign check in state 57
+    if (CURRENT_LATCHES.STATE_NUMBER == 57) {
+        int datasize = GetDATA_SIZE(CURRENT_LATCHES.MICROINSTRUCTION);
+        // MAR alr has VA from prev cycle
+        if ((CURRENT_LATCHES.MAR % 2 != 0) && datasize == 1) {
             NEXT_LATCHES.EXC = 1;
             NEXT_LATCHES.VECT = 0x03;
         }
     }
 
-    // State 18 check for branch exceptions and int
-    else if (CURRENT_LATCHES.STATE_NUMBER == 18) {
-        int pc = CURRENT_LATCHES.PC;
-        int is_protected = (pc < 0x3000) && (CURRENT_LATCHES.PSR_15 == 1);
-        int is_unaligned = (pc % 2 != 0);
+    // Protection & Page Fault check in state 58
+    if (CURRENT_LATCHES.STATE_NUMBER == 58) {
+        int pte = CURRENT_LATCHES.MDR;
+        int pbit = (pte >> 3) & 0x01;
+        int vbit = (pte >> 2) & 0x01;
+        int opcode = (CURRENT_LATCHES.IR >> 12) & 0x000F;
 
-        if (is_protected) {
+        if (pbit == 0 && CURRENT_LATCHES.PSR_15 == 1 && opcode != 0xF) {
+            NEXT_LATCHES.EXC = 1;
+            NEXT_LATCHES.VECT = 0x04;
+        } else if (vbit == 0) {
             NEXT_LATCHES.EXC = 1;
             NEXT_LATCHES.VECT = 0x02;
-        } else if (is_unaligned) {
-            NEXT_LATCHES.EXC = 1;
-            NEXT_LATCHES.VECT = 0x03;
-        } else if (CURRENT_LATCHES.INT == 1) {
-            NEXT_LATCHES.EXC = 1;      
-            NEXT_LATCHES.VECT = 0x01;  
-            NEXT_LATCHES.INT = 0;      
         }
     }
 
@@ -820,6 +850,7 @@ void eval_bus_drivers() {
     int gate_spmath = GetGATE_SPMATH(CURRENT_LATCHES.MICROINSTRUCTION);
     int gate_sp = GetGATE_SP(CURRENT_LATCHES.MICROINSTRUCTION);
     int gate_vect = GetGATE_VECT(CURRENT_LATCHES.MICROINSTRUCTION);
+    int gate_pte = GetGATE_PTE(CURRENT_LATCHES.MICROINSTRUCTION);
 
     if (gate_marmux == 1){
         bus_marmux = eval_MARMUX();
@@ -840,6 +871,8 @@ void eval_bus_drivers() {
         bus_psr = (CURRENT_LATCHES.PSR_15 << 15) | (CURRENT_LATCHES.N << 2) | (CURRENT_LATCHES.Z << 1) | CURRENT_LATCHES.P;
     } if (gate_vect == 1) {
         bus_vect = Low16bits(0x0200 + (CURRENT_LATCHES.VECT << 1));
+    } if (gate_pte == 1) {
+        bus_pte = eval_PTE();
     }
 
 }
@@ -861,6 +894,7 @@ void drive_bus() {
     int gate_psr = GetGATE_PSR(CURRENT_LATCHES.MICROINSTRUCTION);
     int gate_spmath = GetGATE_SPMATH(CURRENT_LATCHES.MICROINSTRUCTION);
     int gate_sp = GetGATE_SP(CURRENT_LATCHES.MICROINSTRUCTION);
+    int gate_pte = GetGATE_PTE(CURRENT_LATCHES.MICROINSTRUCTION);
 
     if (gate_marmux == 1){
         BUS = bus_marmux;
@@ -882,6 +916,8 @@ void drive_bus() {
         BUS = bus_sp;
     } else if (gate_psr == 1) {
         BUS = bus_psr;
+    } else if (gate_pte == 1) {
+        BUS = bus_pte;
     } else {
         BUS = 0;
     }
@@ -907,6 +943,7 @@ void latch_datapath_values() {
     int drmux  = GetDRMUX(CURRENT_LATCHES.MICROINSTRUCTION);
     int pcmux  = GetPCMUX(CURRENT_LATCHES.MICROINSTRUCTION);
     int drmux1 = GetDRMUX1(CURRENT_LATCHES.MICROINSTRUCTION);
+    int ld_va = GetLD_VA(CURRENT_LATCHES.MICROINSTRUCTION);
 
     if (ld_mar == 1) {
         NEXT_LATCHES.MAR = Low16bits(BUS);
@@ -986,6 +1023,8 @@ void latch_datapath_values() {
     } if (CURRENT_LATCHES.STATE_NUMBER == 49) {
         NEXT_LATCHES.PSR_15 = 0;
         NEXT_LATCHES.EXC = 0;
+    } if (ld_va == 1) {
+        NEXT_LATCHES.VA = Low16bits(BUS);
     }
 }
 
@@ -1000,14 +1039,16 @@ int signExtend(int val, int amt) {
 
 
 int eval_MARMUX() {
-    int marmux = GetMARMUX(CURRENT_LATCHES.MICROINSTRUCTION);
+    int marmux0 = GetMARMUX(CURRENT_LATCHES.MICROINSTRUCTION);
+    int marmux1 = GetMARMUX1(CURRENT_LATCHES.MICROINSTRUCTION);
+    int marmux = (marmux1 << 1) | marmux0;
     int gate_marmux = GetGATE_MARMUX(CURRENT_LATCHES.MICROINSTRUCTION);
 
     if (marmux == 0 && gate_marmux == 1) { // only in TRAP
         int trap = CURRENT_LATCHES.IR & 0x00FF;
         return Low16bits(trap << 1);
     
-    } else { // ADDER
+    } else if (marmux == 1) { // ADDER
         int addr1mux = GetADDR1MUX(CURRENT_LATCHES.MICROINSTRUCTION);
         int addr2mux = GetADDR2MUX(CURRENT_LATCHES.MICROINSTRUCTION);
         int lshf = GetLSHF1(CURRENT_LATCHES.MICROINSTRUCTION);
@@ -1039,7 +1080,19 @@ int eval_MARMUX() {
         }
 
         return Low16bits(base + offset);
+
+    } else if (marmux == 2) { // PTE Addr
+        int ptbr = CURRENT_LATCHES.PTBR & 0xFF00;
+        int vpn = (CURRENT_LATCHES.VA >> 9) & 0x007F;
+        return Low16bits(ptbr | vpn << 1);
+
+    } else if (marmux == 3) { // Phys Addr
+        int pfn = CURRENT_LATCHES.MDR & 0x3E00;
+        int offset = CURRENT_LATCHES.VA & 0x01FF;
+        return Low16bits(pfn | offset);
     }
+
+    return 0;
 }
 
 
@@ -1136,4 +1189,14 @@ int eval_SP() {
     } else {
         return CURRENT_LATCHES.USP; // 1 for USP
     }
+}
+
+int eval_PTE() {
+    int pte = CURRENT_LATCHES.MDR;
+    pte = pte | 0x0001;
+    int opcode = (CURRENT_LATCHES.IR >> 12) & 0x000F;
+    if (opcode == 0x03 || opcode == 0x07) {
+        pte = pte | 0x0002;
+    }
+    return Low16bits(pte);
 }
