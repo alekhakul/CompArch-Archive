@@ -750,7 +750,7 @@ void eval_micro_sequencer() {
 
     // Unalign check in state 57
     if (CURRENT_LATCHES.STATE_NUMBER == 57) {
-        int datasize = GetDATA_SIZE(CURRENT_LATCHES.MICROINSTRUCTION);
+        int datasize = GetDATA_SIZE(CONTROL_STORE[CURRENT_LATCHES.SS]);
         // MAR alr has VA from prev cycle
         if ((CURRENT_LATCHES.MAR % 2 != 0) && datasize == 1) {
             NEXT_LATCHES.EXC = 1;
