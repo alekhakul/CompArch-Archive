@@ -37,3 +37,6 @@ LOOP LDW R3, R0, #0 ; Load PTE
 PTBR .FILL x1000
 PT_SIZE .FILL #128
     .END
+
+    ; Enters at 315
+    ; Exits at 26113

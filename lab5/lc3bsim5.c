@@ -207,7 +207,13 @@ int STATE_NUMBER; /* Current State Number - Provided for debugging */
 /* For lab 4 */
 int INTV; /* Interrupt vector register */
 int EXCV; /* Exception vector register */
+int INT; /* Interrupt vector flag */
+int EXC; /* Exception vector flag */
 int SSP; /* Initial value of system stack pointer */
+int USP; // Initial val of user stack pointer
+int VECT; // Unified vector register for int and exc
+int PSR_15; // Privilege mode bit: 1 = User, 0 = Supervisor
+
 /* MODIFY: you should add here any other registers you need to implement interrupts and exceptions */
 
 /* For lab 5 */
@@ -685,6 +691,7 @@ int eval_MDR();
 int eval_SPMATH();
 int eval_SP();
 int eval_PTE();
+int eval_ADDER();
 
 void eval_micro_sequencer() {
 
@@ -1012,7 +1019,7 @@ void latch_datapath_values() {
         } else if (pcmux == 1) {
             NEXT_LATCHES.PC = Low16bits(BUS);
         } else if (pcmux == 2) {
-            NEXT_LATCHES.PC = eval_MARMUX();
+            NEXT_LATCHES.PC = eval_ADDER();
         } else if (pcmux == 3) {
             NEXT_LATCHES.PC = CURRENT_LATCHES.PC - 2; // Lab 4 PC-2 when PCMUX = 11
         }
@@ -1024,7 +1031,7 @@ void latch_datapath_values() {
         NEXT_LATCHES.PSR_15 = 0;
         NEXT_LATCHES.EXC = 0;
     } if (ld_va == 1) {
-        NEXT_LATCHES.VA = Low16bits(BUS);
+        NEXT_LATCHES.VA = CURRENT_LATCHES.MAR;
     }
 }
 
@@ -1049,38 +1056,7 @@ int eval_MARMUX() {
         return Low16bits(trap << 1);
     
     } else if (marmux == 1) { // ADDER
-        int addr1mux = GetADDR1MUX(CURRENT_LATCHES.MICROINSTRUCTION);
-        int addr2mux = GetADDR2MUX(CURRENT_LATCHES.MICROINSTRUCTION);
-        int lshf = GetLSHF1(CURRENT_LATCHES.MICROINSTRUCTION);
-        int base = 0;
-        int offset = 0;
-
-        // base
-        if (addr1mux == 0) {
-            base = CURRENT_LATCHES.PC;
-        } else {
-            int base_reg = (CURRENT_LATCHES.IR >> 6) & 0x07;
-            base = CURRENT_LATCHES.REGS[base_reg];
-        }
-
-        // offset
-        if (addr2mux == 0) {
-            offset = 0;
-        } else if (addr2mux == 1) {
-            offset = signExtend(CURRENT_LATCHES.IR & 0x3F, 6);
-        } else if (addr2mux == 2) {
-            offset = signExtend(CURRENT_LATCHES.IR & 0x1FF, 9);
-        } else if (addr2mux == 3) {
-            offset = signExtend(CURRENT_LATCHES.IR & 0x7FF, 11);
-        }
-
-        // lshf
-        if (lshf == 1) {
-            offset = offset << 1;
-        }
-
-        return Low16bits(base + offset);
-
+        return eval_ADDER();
     } else if (marmux == 2) { // PTE Addr
         int ptbr = CURRENT_LATCHES.PTBR & 0xFF00;
         int vpn = (CURRENT_LATCHES.VA >> 9) & 0x007F;
@@ -1199,4 +1175,38 @@ int eval_PTE() {
         pte = pte | 0x0002;
     }
     return Low16bits(pte);
+}
+
+int eval_ADDER() {
+    int addr1mux = GetADDR1MUX(CURRENT_LATCHES.MICROINSTRUCTION);
+    int addr2mux = GetADDR2MUX(CURRENT_LATCHES.MICROINSTRUCTION);
+    int lshf = GetLSHF1(CURRENT_LATCHES.MICROINSTRUCTION);
+    int base = 0;
+    int offset = 0;
+
+    // base
+    if (addr1mux == 0) {
+        base = CURRENT_LATCHES.PC;
+    } else {
+        int base_reg = (CURRENT_LATCHES.IR >> 6) & 0x07;
+        base = CURRENT_LATCHES.REGS[base_reg];
+    }
+
+    // offset
+    if (addr2mux == 0) {
+        offset = 0;
+    } else if (addr2mux == 1) {
+        offset = signExtend(CURRENT_LATCHES.IR & 0x3F, 6);
+    } else if (addr2mux == 2) {
+        offset = signExtend(CURRENT_LATCHES.IR & 0x1FF, 9);
+    } else if (addr2mux == 3) {
+        offset = signExtend(CURRENT_LATCHES.IR & 0x7FF, 11);
+    }
+
+    // lshf
+    if (lshf == 1) {
+        offset = offset << 1;
+    }
+
+    return Low16bits(base + offset);
 }

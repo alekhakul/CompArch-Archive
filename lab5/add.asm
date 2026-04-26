@@ -9,11 +9,11 @@
     ;ADD R1, R1, #1
     ;STW R1, R0, #0
     ;LDW R1, R0, #0
-    LEA R0, PTR4000
-    LDW R0, R0, #0
-    AND R1, R1, #0      
-    ADD R1, R1, #1      ; R1 = 1
-    STW R1, R0, #0      ; Mem[x4000] = 1 (Init)
+    ;LEA R0, PTR4000
+    ;LDW R0, R0, #0
+    ;AND R1, R1, #0      
+    ;ADD R1, R1, #1      ; R1 = 1
+    ;STW R1, R0, #0      ; Mem[x4000] = 1 (Init)
     LEA R2, PTRC000
     LDW R2, R2, #0      ; R2 = xC000 (data pointer)
     AND R3, R3, #0      ; R3 = 0 (sum)
@@ -29,13 +29,14 @@ SUM_LOOP LDB R5, R2, #0      ; Load byte
     LDW R6, R6, #0      ; R6 = xC014
     STW R3, R6, #0      ; Mem[xC014] = Sum
 
-    AND R0, R0, #0      ; R0 = x0000
+    ;AND R0, R0, #0      ; R0 = x0000
     ;ADD R0, R0, #1      ; Test exception priority (should be protected)
-    STW R3, R0, #0      ; Triggers protection exc
+    ;STW R3, R0, #0      ; Triggers protection exc
     ;LEA R0, PTRC017    ; Triggers unaligned exc
     ;LDW R0, R0, #0
     ;STW R3, R0, #0
 
+    JMP R3
     HALT                ; Exc should trigger before this
     
 PTR4000 .FILL x4000
